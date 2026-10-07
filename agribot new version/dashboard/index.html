@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AgriSense Pro Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="bg-gradient"></div>
+
+  <div class="app-container">
+    <header class="card-panel">
+      <div class="logo">
+        <div class="pulse-dot" id="status-dot"></div>
+        <h1>AgriSense <span>PRO</span></h1>
+      </div>
+      <div class="status-badge" id="status-text">Connecting...</div>
+    </header>
+
+    <!-- TABS -->
+    <div class="tabs-container">
+      <button class="tab-btn active" id="tab-dashboard">📊 Dashboard</button>
+      <button class="tab-btn" id="tab-drive">🎮 Drive Mode</button>
+    </div>
+
+    <!-- ==================== DASHBOARD TAB ==================== -->
+    <main class="tab-content active" id="content-dashboard">
+      <div class="dashboard-grid">
+        <!-- Telemetry Section -->
+        <section class="card-panel telemetry-card">
+          <div class="panel-header">
+            <h2>Live Telemetry</h2>
+            <button id="btn-download" class="btn-primary">⬇ CSV</button>
+          </div>
+          
+          <div class="metrics">
+            <div class="metric-box">
+              <span class="label">Soil Moisture</span>
+              <span class="value" id="moisture-val">--%</span>
+            </div>
+            <div class="metric-box">
+              <span class="label">Obstacle Dist</span>
+              <span class="value" id="distance-val">-- cm</span>
+              <span id="distance-status" style="font-size: 14px; font-weight: 800; margin-top: 5px;">--</span>
+            </div>
+            <div class="metric-box">
+              <span class="label">Soil pH</span>
+              <span class="value" id="ph-val">--</span>
+            </div>
+            <div class="metric-box battery-box">
+              <span class="label">Battery Health</span>
+              <span class="value hardware-req">Requires ADC Wiring</span>
+            </div>
+          </div>
+
+          <div class="chart-wrapper">
+            <canvas id="sensorChart"></canvas>
+          </div>
+
+          <div class="event-log">
+            <h3>System Event Log</h3>
+            <ul id="log-list">
+              <li><span class="time">Just now</span> System Initialized</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- Actuators Section -->
+        <div class="controls-column">
+          <section class="card-panel actuators-card">
+            <h2>Systems Control</h2>
+            
+            <div class="pulley-control">
+              <span class="sys-label">Winch / Pulley System</span>
+              <div class="pulley-btns">
+                <button class="action-btn" id="btn-pulley-up">MOVE UP</button>
+                <button class="action-btn stop-btn" id="btn-pulley-stop">STOP</button>
+                <button class="action-btn" id="btn-pulley-down">MOVE DOWN</button>
+              </div>
+            </div>
+
+            <div class="toggle-group">
+              <div class="toggle-box auto-water-box">
+                <span class="sys-label highlight">Smart Auto-Watering</span>
+                <label class="switch"><input type="checkbox" id="toggle-auto"><span class="slider"></span></label>
+              </div>
+
+              <div class="toggle-box">
+                <span class="sys-label">Manual Pump Override</span>
+                <label class="switch"><input type="checkbox" id="toggle-pump"><span class="slider"></span></label>
+              </div>
+              
+              <div class="toggle-box">
+                <span class="sys-label">Manual Buzzer</span>
+                <label class="switch"><input type="checkbox" id="toggle-buzzer"><span class="slider"></span></label>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <!-- ==================== DRIVE MODE TAB ==================== -->
+    <main class="tab-content" id="content-drive" style="display: none;">
+      <div class="drive-grid">
+        <section class="card-panel rc-card">
+          <h2>Vehicle Navigation</h2>
+          
+          <div class="joystick-wrapper">
+            <div class="joystick-base">
+              <button class="d-btn up" id="btn-forward">▲</button>
+              <div class="d-row">
+                <button class="d-btn left" id="btn-left">◀</button>
+                <button class="d-btn stop" id="btn-stop"><div class="stop-inner"></div></button>
+                <button class="d-btn right" id="btn-right">▶</button>
+              </div>
+              <button class="d-btn down" id="btn-backward">▼</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="card-panel drive-settings">
+          <h2>Drive Settings</h2>
+          
+          <div class="speed-control">
+            <div class="speed-header">
+              <span class="sys-label">Motor Speed</span>
+              <span class="speed-val" id="speed-val-display">100%</span>
+            </div>
+            <input type="range" id="speed-slider" min="0" max="255" value="255" class="speed-slider">
+          </div>
+
+          <div class="toggle-group" style="margin-top: 30px;">
+            <div class="toggle-box warning-box">
+              <div>
+                <span class="sys-label highlight" style="color: #ea580c;">Auto Obstacle Alarm</span>
+                <p style="font-size: 12px; color: #64748b;">Triggers buzzer if obstacle < 20cm</p>
+              </div>
+              <label class="switch"><input type="checkbox" id="toggle-obstacle-alarm"><span class="slider"></span></label>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Inline script for Tabs so they work instantly -->
+  <script>
+    const tabDashboard = document.getElementById('tab-dashboard');
+    const tabDrive = document.getElementById('tab-drive');
+    const contentDashboard = document.getElementById('content-dashboard');
+    const contentDrive = document.getElementById('content-drive');
+
+    tabDashboard.addEventListener('click', () => {
+      tabDashboard.classList.add('active'); 
+      tabDrive.classList.remove('active');
+      contentDashboard.style.display = 'block'; 
+      contentDrive.style.display = 'none';
+    });
+
+    tabDrive.addEventListener('click', () => {
+      tabDrive.classList.add('active'); 
+      tabDashboard.classList.remove('active');
+      contentDrive.style.display = 'block'; 
+      contentDashboard.style.display = 'none';
+    });
+  </script>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
