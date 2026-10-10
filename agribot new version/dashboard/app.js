@@ -141,23 +141,60 @@ speedSlider.addEventListener('change', (e) => {
 
 // DRIVE CONTROLS
 const driveRef = ref(db, 'bot/control/drive');
-function setDrive(cmd) { set(driveRef, cmd); if(cmd !== 'STOP') addLog(`Driving ${cmd}`); }
+let currentDriveCmd = 'STOP';
+
+function setDrive(cmd) {
+  if (cmd === currentDriveCmd) return;
+  currentDriveCmd = cmd;
+  set(driveRef, cmd);
+  if (cmd !== 'STOP') addLog(`Driving ${cmd}`);
+  else addLog("Car Stopped");
+}
 
 document.getElementById('btn-forward').addEventListener('pointerdown', () => setDrive('FORWARD'));
 document.getElementById('btn-backward').addEventListener('pointerdown', () => setDrive('BACKWARD'));
 document.getElementById('btn-left').addEventListener('pointerdown', () => setDrive('LEFT'));
 document.getElementById('btn-right').addEventListener('pointerdown', () => setDrive('RIGHT'));
-document.getElementById('btn-stop').addEventListener('pointerdown', () => setDrive('STOP'));
+document.getElementById('btn-stop').addEventListener('click', () => setDrive('STOP'));
+
 ['btn-forward', 'btn-backward', 'btn-left', 'btn-right'].forEach(id => {
-  document.getElementById(id).addEventListener('pointerup', () => setDrive('STOP'));
-  document.getElementById(id).addEventListener('pointerleave', () => setDrive('STOP'));
+  const el = document.getElementById(id);
+  el.addEventListener('pointerup', () => setDrive('STOP'));
+  el.addEventListener('pointercancel', () => setDrive('STOP'));
+  el.addEventListener('pointerleave', (e) => {
+    // Only stop if pointer was pressed down when leaving
+    if (e.buttons !== 0) setDrive('STOP');
+  });
 });
 
-// PULLEY
+// Keyboard Navigation (WASD & Arrow Keys)
+window.addEventListener('keydown', (e) => {
+  if (e.repeat) return;
+  const key = e.key.toLowerCase();
+  if (key === 'w' || key === 'arrowup') setDrive('FORWARD');
+  else if (key === 's' || key === 'arrowdown') setDrive('BACKWARD');
+  else if (key === 'a' || key === 'arrowleft') setDrive('LEFT');
+  else if (key === 'd' || key === 'arrowright') setDrive('RIGHT');
+  else if (key === ' ' || key === 'escape') setDrive('STOP');
+});
+
+window.addEventListener('keyup', (e) => {
+  const key = e.key.toLowerCase();
+  if ((key === 'w' || key === 'arrowup') && currentDriveCmd === 'FORWARD') setDrive('STOP');
+  else if ((key === 's' || key === 'arrowdown') && currentDriveCmd === 'BACKWARD') setDrive('STOP');
+  else if ((key === 'a' || key === 'arrowleft') && currentDriveCmd === 'LEFT') setDrive('STOP');
+  else if ((key === 'd' || key === 'arrowright') && currentDriveCmd === 'RIGHT') setDrive('STOP');
+});
+
+// PULLEY & SERVO
 const pulleyRef = ref(db, 'bot/control/pulley');
 document.getElementById('btn-pulley-up').addEventListener('click', () => { set(pulleyRef, 'UP'); addLog("Pulley UP"); });
 document.getElementById('btn-pulley-down').addEventListener('click', () => { set(pulleyRef, 'DOWN'); addLog("Pulley DOWN"); });
 document.getElementById('btn-pulley-stop').addEventListener('click', () => { set(pulleyRef, 'STOP'); addLog("Pulley STOP"); });
+
+const servoRef = ref(db, 'bot/control/servo');
+document.getElementById('btn-servo-open').addEventListener('click', () => { set(servoRef, 90); addLog("Servo OPEN (90°)"); });
+document.getElementById('btn-servo-close').addEventListener('click', () => { set(servoRef, 0); addLog("Servo CLOSED (0°)"); });
 
 // MANUAL TOGGLES
 document.getElementById('toggle-pump').addEventListener('change', (e) => { set(pumpRef, e.target.checked); addLog(`Manual Pump ${e.target.checked ? 'ON' : 'OFF'}`); });
